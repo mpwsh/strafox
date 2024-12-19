@@ -25,12 +25,29 @@ function ui.draw(game, player)
   -- Draw player or death animation
   if not game.gameOver then
     ui.drawPlayer(player)
+    ui.drawStrafeText(game) -- Only draw strafe text when game is not over
   else
     ui.drawDeathAnimation(player)
+    game.strafeText = {} -- Clear strafe text when game is over
   end
 
-  ui.drawStrafeText(game)
   ui.drawHUD(game, player)
+
+  -- Draw intro text if it's still visible
+  if game.introText.lifetime > 0 and game.introText.opacity > 0 then
+    love.graphics.setColor(1, 1, 1, game.introText.opacity)
+    love.graphics.printf(game.introText.message,
+      0, love.graphics.getHeight() / 2 - 60,
+      love.graphics.getWidth(), "center")
+  end
+
+  -- Draw pause text if game is paused
+  if game.isPaused then
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.printf("PAUSED",
+      0, love.graphics.getHeight() / 2 - 30,
+      love.graphics.getWidth(), "center")
+  end
 end
 
 function ui.drawPlayer(player)
@@ -157,6 +174,7 @@ function ui.drawHUD(game, player)
   -- Main stats
   love.graphics.print(string.format("Score: %d", math.floor(game.score)), 10, 10)
   love.graphics.print(string.format("Velocity: %d", math.floor(player.velocity)), 10, 30)
+  love.graphics.print(string.format("Distance: %d", math.floor(game.distance)), 10, 50)
 
   -- Detailed strafe counts
   love.graphics.print("Strafes:", 10, 50)

@@ -6,16 +6,14 @@ local ui = require 'ui'
 local playerModule = require 'player'
 local physics = require 'physics'
 local strafe = require 'strafe'
+local Shader = require 'shader'
 
-
-function love.load()
-  player = playerModule.create()
-  state = strafe.createState()
-
-  game = {
+function initializeGameState()
+  return {
     score = 0,
     speed = 200,
     spawnTimer = 0,
+    distance = 0,
     spawnInterval = 2,
     obstacles = {},
     gameOver = false,
@@ -25,36 +23,60 @@ function love.load()
     perfectCombo = 0,
     perfectScore = 200,
     badScoreMultiplier = 0.5,
+    isPaused = false,
+    introText = {
+      message = "Ready?\nPress P to pause. R to restart.\nA and D to move",
+      opacity = 1,
+      lifetime = 3,
+      fadeOutDuration = 1
+    },
     stats = {
       perfectStrafes = 0,
       lateStrafes = 0,
       earlyStrafes = 0,
-      maxCombo = 0 -- Track best combo
+      maxCombo = 0
     }
   }
+end
+
+function love.load()
+  player = playerModule.create()
+  state = strafe.createState()
+  game = initializeGameState()
+  Shader.load()
 
   colors = {
     { 1, 0.4, 0 },
     { 1, 0.6, 0 },
     { 1, 0.8, 0 }
   }
-
   math.randomseed(os.time())
 end
 
 function love.update(dt)
-  if game.gameOver then
-    playerModule.updateDeathAnimation(player, dt)
+  if game.introText.lifetime > 0 then
+    game.introText.lifetime = game.introText.lifetime - dt
+    if game.introText.lifetime <= game.introText.fadeOutDuration then
+      game.introText.opacity = math.max(0, game.introText.lifetime / game.introText.fadeOutDuration)
+    end
+  end
 
+  if game.gameOver or game.isPaused then
+    if game.gameOver then
+      playerModule.updateDeathAnimation(player, dt)
+    end
     for i = #game.obstacles, 1, -1 do
       local obstacle = game.obstacles[i]
-      obstacle.y = obstacle.y + game.speed * dt
+      if game.gameOver then
+        obstacle.y = obstacle.y + game.speed * dt
+      end
       if obstacle.y > love.graphics.getHeight() + 100 then
         table.remove(game.obstacles, i)
       end
     end
     return
   end
+
 
   local leftKey = love.keyboard.isDown('a')
   local rightKey = love.keyboard.isDown('d')
@@ -84,7 +106,9 @@ function love.update(dt)
   end
 
   ui.updateStrafeText(game, dt)
-
+  if not game.gameOver and not game.isPaused then
+    game.distance = game.distance + (game.speed * dt)
+  end
   for i = #game.obstacles, 1, -1 do
     local obstacle = game.obstacles[i]
     obstacle.y = obstacle.y + game.speed * dt
@@ -104,24 +128,17 @@ function love.update(dt)
 end
 
 function love.draw()
+  Shader.drawBackground(game)
+
   ui.draw(game, player)
 end
 
 function love.keypressed(key)
-  if key == 'r' then
-    game.obstacles = {}
-    game.score = 0
-    game.speed = 200
-    game.gameOver = false
-    game.spawnTimer = 0
-    game.perfectCombo = 0 -- Reset combo
+  if key == 'p' then
+    game.isPaused = not game.isPaused
+  elseif key == 'r' then
+    game = initializeGameState()
     player = playerModule.create()
     state = strafe.createState()
-    game.stats = {
-      perfectStrafes = 0,
-      lateStrafes = 0,
-      earlyStrafes = 0,
-      maxCombo = 0
-    }
   end
 end
