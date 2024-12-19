@@ -29,10 +29,9 @@ jobs:
 
       - name: Build with love.js
         run: |
-          mkdir game
-          mv * ./game
+          GAME_DIR=${GITHUB_WORKSPACE}
           mkdir web
-          npx love.js --title Strafox game web
+          npx love.js --title Strafox ${GAME_DIR} web
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v3
