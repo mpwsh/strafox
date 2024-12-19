@@ -30,7 +30,7 @@ jobs:
       - name: Build with love.js
         run: |
           mkdir web
-          npx love.js --title Strafox -c . web
+          npx love.js --title Strafox . web
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v3
