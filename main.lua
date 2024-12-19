@@ -7,6 +7,7 @@ local playerModule = require 'player'
 local physics = require 'physics'
 local strafe = require 'strafe'
 
+
 function love.load()
   player = playerModule.create()
   state = strafe.createState()
@@ -107,7 +108,7 @@ function love.draw()
 end
 
 function love.keypressed(key)
-  if key == 'r' and game.gameOver then
+  if key == 'r' then
     game.obstacles = {}
     game.score = 0
     game.speed = 200

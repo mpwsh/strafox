@@ -32,6 +32,7 @@ jobs:
           GAME_DIR=${GITHUB_WORKSPACE}
           mkdir web
           npx love.js --title Strafox -c ${GAME_DIR} web
+          cp index.html ./web/index.html
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v3
