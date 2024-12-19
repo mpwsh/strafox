@@ -29,8 +29,10 @@ jobs:
 
       - name: Build with love.js
         run: |
+          mkdir game
+          mv * ./game
           mkdir web
-          npx love.js --title Strafox . web
+          npx love.js --title Strafox game web
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v3
