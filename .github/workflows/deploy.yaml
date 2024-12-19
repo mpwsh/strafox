@@ -32,6 +32,12 @@ jobs:
           mkdir web
           npx love.js --title Strafox -c . web
 
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-build
+          path: web
+
   deploy:
     needs: build
     environment:
@@ -39,6 +45,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      - name: Download web artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: web-build
+          path: web
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
