@@ -40,7 +40,7 @@ function player.create()
       duration = 0.3,
       particles = {},
       shake = {
-        intensity = 1,
+        intensity = 3,
         duration = 0.3,
         timer = 0
       }
