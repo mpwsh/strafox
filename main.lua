@@ -1,12 +1,14 @@
 io.stdout:setvbuf("no")
 print("Starting main.lua")
 
+local moonshine = require 'moonshine'
 local obstacles = require 'obstacles'
 local ui = require 'ui'
 local playerModule = require 'player'
 local physics = require 'physics'
 local strafe = require 'strafe'
 local Shader = require 'shader'
+local items = require 'items'
 
 function initializeGameState()
   return {
@@ -15,6 +17,9 @@ function initializeGameState()
     spawnTimer = 0,
     distance = 0,
     spawnInterval = 2,
+    itemSpawnTimer = 0,
+    itemSpawnInterval = 4,
+    activeItems = {},
     obstacles = {},
     gameOver = false,
     baseSize = 40,
@@ -30,6 +35,7 @@ function initializeGameState()
       lifetime = 3,
       fadeOutDuration = 1
     },
+    strafeTimings = {},
     stats = {
       perfectStrafes = 0,
       lateStrafes = 0,
@@ -44,7 +50,24 @@ function love.load()
   state = strafe.createState()
   game = initializeGameState()
   Shader.load()
+-- Create moonshine effect chain
+  effect = moonshine(moonshine.effects.crt)
+          .chain(moonshine.effects.filmgrain)
+          .chain(moonshine.effects.glow)
+          .chain(moonshine.effects.chromasep)
 
+  -- Configure the effects
+  effect.crt.distortionFactor = {1.03, 1.035}  -- Subtle curve
+  effect.crt.feather = 0.02                    -- Smoothing
+  
+  effect.filmgrain.opacity = 0.2               -- Subtle grain
+  effect.filmgrain.size = 1                    -- Slightly chunky
+  
+  effect.glow.strength = 2                     -- Moderate glow
+  effect.glow.min_luma = 0.2                   -- Only glow brighter elements
+  
+  effect.chromasep.angle = 0.5                 -- Direction of color separation
+  effect.chromasep.radius = 2                  -- Amount of separation
   colors = {
     { 1, 0.4, 0 },
     { 1, 0.6, 0 },
@@ -54,13 +77,20 @@ function love.load()
 end
 
 function love.update(dt)
-  if game.introText.lifetime > 0 then
+  playerModule.updateHitEffect(player, dt)
+
+ if game.introText.lifetime > 0 then
     game.introText.lifetime = game.introText.lifetime - dt
     if game.introText.lifetime <= game.introText.fadeOutDuration then
       game.introText.opacity = math.max(0, game.introText.lifetime / game.introText.fadeOutDuration)
     end
   end
-
+ if player.invulnerable then
+    player.invulnerabilityTimer = player.invulnerabilityTimer - dt
+    if player.invulnerabilityTimer <= 0 then
+        player.invulnerable = false
+    end
+end 
   if game.gameOver or game.isPaused then
     if game.gameOver then
       playerModule.updateDeathAnimation(player, dt)
@@ -77,9 +107,47 @@ function love.update(dt)
     return
   end
 
+  -- Update heal effect
+  playerModule.updateHealEffect(player, dt)
 
+  -- Update and check for item spawning
+  game.itemSpawnTimer = game.itemSpawnTimer + dt
+  if game.itemSpawnTimer >= game.itemSpawnInterval then
+    game.itemSpawnTimer = 0
+    if math.random() < 0.3 then  -- 30% chance to spawn
+      local newItem = items.spawn(game.obstacles)
+      if newItem then
+        table.insert(game.activeItems, newItem)
+      end
+    end
+  end
+
+  -- Update items and check collisions
+  for i = #game.activeItems, 1, -1 do
+    local item = game.activeItems[i]
+    item.y = item.y + game.speed * dt  -- Move items down with obstacles
+    items.updatePickupEffect(item, dt)
+
+    -- Remove items that are off screen
+    if item.y > love.graphics.getHeight() + 100 then
+      table.remove(game.activeItems, i)
+    else
+      -- Check collision with player
+      local dx = player.x - item.x
+      local dy = player.y - item.y
+      local distance = math.sqrt(dx * dx + dy * dy)
+      
+      if distance < (player.size + item.size) then
+        playerModule.heal(player)
+        items.startPickupEffect(item)
+        table.remove(game.activeItems, i)
+      end
+    end
+  end
+
+  -- Rest of your existing update code...
   local leftKey = love.keyboard.isDown('a')
-  local rightKey = love.keyboard.isDown('d')
+  local rightKey = love.keyboard.isDown('d') 
   local currentTime = love.timer.getTime()
 
   state = strafe.update(state, leftKey, rightKey, currentTime, player.velocity)
@@ -113,10 +181,16 @@ function love.update(dt)
     local obstacle = game.obstacles[i]
     obstacle.y = obstacle.y + game.speed * dt
 
-    if physics.checkCollision(player, obstacle, game.baseSize) then
-      game.gameOver = true
-      playerModule.startDeathAnimation(player)
+  if physics.checkCollision(player, obstacle, game.baseSize) and not player.invulnerable then
+    player.health = player.health - 1
+    player.invulnerable = true
+    player.invulnerabilityTimer = 1 -- 1 second of invulnerability
+   playerModule.startHitEffect(player) 
+    if player.health <= 0 then
+        game.gameOver = true
+        playerModule.startDeathAnimation(player)
     end
+end 
 
     if obstacle.y > love.graphics.getHeight() + 100 then
       if not game.gameOver and obstacle.isGapMarker then
@@ -128,14 +202,17 @@ function love.update(dt)
 end
 
 function love.draw()
+   effect(function()
   Shader.drawBackground(game)
-
   ui.draw(game, player)
+   end)
 end
 
 function love.keypressed(key)
   if key == 'p' then
     game.isPaused = not game.isPaused
+    state.leftPressed = false
+    state.rightPressed = false
   elseif key == 'r' then
     game = initializeGameState()
     player = playerModule.create()

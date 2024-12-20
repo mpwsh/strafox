@@ -12,7 +12,7 @@ function Shader.load()
         const int volsteps = 7;
         const float formuparam = 0.53;
         const float stepsize = 0.15;
-        const float tile = 0.150;
+        const float tile = 0.850;
         const float speed = 0.0005;
         const float brightness = 0.0005;
         const float darkmatter = 0.750;

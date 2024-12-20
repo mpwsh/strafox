@@ -1,6 +1,7 @@
 local ui = {}
 
 local obstacles = require("obstacles")
+local items = require("items")
 
 function ui.updateStrafeText(game, dt)
   for i = #game.strafeText, 1, -1 do
@@ -14,43 +15,77 @@ function ui.updateStrafeText(game, dt)
   end
 end
 
-function ui.draw(game, player)
-  -- Draw obstacles using obstacle.drawSquare
-  for _, obstacle in ipairs(game.obstacles) do
-    if not obstacle.isGapMarker then
-      obstacles.drawSquare(obstacle.x, obstacle.y, game.baseSize)
+
+
+function ui.drawHealth(player)
+    local screenHeight = love.graphics.getHeight()
+    local baseY = screenHeight - 30  -- Position 30 pixels from bottom
+    
+    for i = 1, player.maxHealth do
+        -- Draw outline
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.circle('line', 20 + (i-1) * 25, baseY, 8)
+        
+        -- Draw filled circle if health exists
+        if i <= player.health then
+            love.graphics.setColor(0, 0.8, 0, 0.8)  -- Slightly transparent green
+            love.graphics.circle('fill', 20 + (i-1) * 25, baseY, 7)
+            -- Add a lighter green glow in the center for effect
+            love.graphics.setColor(0.3, 1, 0.3, 0.5)
+            love.graphics.circle('fill', 20 + (i-1) * 25, baseY, 4)
+        else
+            -- Draw empty circles with slight opacity
+            love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
+            love.graphics.circle('fill', 20 + (i-1) * 25, baseY, 7)
+        end
     end
-  end
-
-  -- Draw player or death animation
-  if not game.gameOver then
-    ui.drawPlayer(player)
-    ui.drawStrafeText(game) -- Only draw strafe text when game is not over
-  else
-    ui.drawDeathAnimation(player)
-    game.strafeText = {} -- Clear strafe text when game is over
-  end
-
-  ui.drawHUD(game, player)
-
-  -- Draw intro text if it's still visible
-  if game.introText.lifetime > 0 and game.introText.opacity > 0 then
-    love.graphics.setColor(1, 1, 1, game.introText.opacity)
-    love.graphics.printf(game.introText.message,
-      0, love.graphics.getHeight() / 2 - 60,
-      love.graphics.getWidth(), "center")
-  end
-
-  -- Draw pause text if game is paused
-  if game.isPaused then
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.printf("PAUSED",
-      0, love.graphics.getHeight() / 2 - 30,
-      love.graphics.getWidth(), "center")
-  end
 end
 
+function ui.drawPlayerHealEffect(player)
+    if player.healEffect.active then
+        -- Draw glow effect
+        love.graphics.setColor(0, 1, 0, player.healEffect.glowIntensity * 0.3)
+        love.graphics.push()
+        love.graphics.translate(player.x, player.y)
+        love.graphics.polygon('fill', player.vertices)
+        love.graphics.pop()
+
+        -- Draw heal effect particles
+        love.graphics.setColor(0, 1, 0, 0.5)
+        for _, particle in ipairs(player.healEffect.particles) do
+            love.graphics.circle('fill', particle.x, particle.y, 3 * particle.opacity)
+        end
+    end
+end
+function ui.drawHitEffect(player)
+  if player.hitEffect.active then
+    love.graphics.setColor(1, 0.5, 0, 1)  -- Orange color for explosion
+    for _, particle in ipairs(player.hitEffect.particles) do
+      love.graphics.push()
+      love.graphics.translate(particle.x, particle.y)
+      love.graphics.rotate(particle.rotation)
+      love.graphics.setColor(1, 0.5, 0, particle.opacity)
+      love.graphics.rectangle('fill', -particle.size/2, -particle.size/2, particle.size, particle.size)
+      love.graphics.pop()
+    end
+  end
+end
 function ui.drawPlayer(player)
+   if player.hitEffect.active then
+    love.graphics.setColor(1, 0.3, 0.3, 1)  -- Reddish tint when hit
+  elseif player.invulnerable and math.floor(love.timer.getTime() * 10) % 2 == 0 then
+    love.graphics.setColor(1, 1, 1, 0.5)
+  else
+    love.graphics.setColor(1, 1, 1, 1)
+  end
+
+    ui.drawPlayerHealEffect(player)
+    if player.invulnerable and math.floor(love.timer.getTime() * 10) % 2 == 0 then
+        love.graphics.setColor(1, 1, 1, 0.5)  -- Make semi-transparent during invulnerability
+    else
+        love.graphics.setColor(1, 1, 1, 1)
+    end
+    
   love.graphics.push()
   love.graphics.translate(player.x, player.y)
 
@@ -70,7 +105,62 @@ function ui.drawPlayer(player)
 
   local velLength = (player.velocity / player.maxSpeed) * 40
   love.graphics.line(0, 0, velLength, 0)
-  love.graphics.pop()
+  love.graphics.pop() 
+end
+function ui.draw(game, player)
+   -- Apply screen shake
+  if player.hitEffect.active and player.hitEffect.shake.timer < player.hitEffect.shake.duration then
+    local intensity = player.hitEffect.shake.intensity * 
+      (1 - player.hitEffect.shake.timer / player.hitEffect.shake.duration)
+    love.graphics.translate(
+      math.random(-intensity, intensity),
+      math.random(-intensity, intensity)
+    )
+  end
+
+  -- Draw obstacles using obstacle.drawSquare
+  for _, obstacle in ipairs(game.obstacles) do
+      if not obstacle.isGapMarker then
+          obstacles.drawSquare(obstacle.x, obstacle.y, game.baseSize)
+      end
+  end
+
+  
+
+  -- Draw player or death animation
+  if not game.gameOver then
+    -- Draw healing items if they exist
+   for _, item in ipairs(game.activeItems) do
+      items.draw(item)
+    end 
+    ui.drawHitEffect(player)
+    ui.drawPlayer(player)
+    ui.drawStrafeText(game) 
+  else
+      ui.drawDeathAnimation(player)
+      game.strafeText = {} 
+  end
+
+  -- Draw health indicators
+  ui.drawHealth(player)
+  
+  ui.drawHUD(game, player)
+  
+  -- Draw intro text if it's still visible
+  if game.introText.lifetime > 0 and game.introText.opacity > 0 then
+      love.graphics.setColor(1, 1, 1, game.introText.opacity)
+      love.graphics.printf(game.introText.message,
+          0, love.graphics.getHeight() / 2 - 60,
+          love.graphics.getWidth(), "center")
+  end
+  
+  -- Draw pause text if game is paused
+  if game.isPaused then
+      love.graphics.setColor(1, 1, 1, 1)
+      love.graphics.printf("PAUSED",
+          0, love.graphics.getHeight() / 2 - 30,
+          love.graphics.getWidth(), "center")
+  end
 end
 
 function ui.drawDeathAnimation(player)
@@ -171,21 +261,23 @@ end
 
 function ui.drawHUD(game, player)
   love.graphics.setColor(1, 1, 1, 1)
-  -- Main stats
-  love.graphics.print(string.format("Score: %d", math.floor(game.score)), 10, 10)
-  love.graphics.print(string.format("Velocity: %d", math.floor(player.velocity)), 10, 30)
-  love.graphics.print(string.format("Distance: %d", math.floor(game.distance)), 10, 50)
 
-  -- Detailed strafe counts
-  love.graphics.print("Strafes:", 10, 50)
-  love.graphics.setColor(0, 1, 0, 1)
-  love.graphics.print(string.format("  Perfect: %d", game.stats.perfectStrafes), 10, 70)
-  love.graphics.setColor(1, 1, 0, 1)
-  love.graphics.print(string.format("  Early: %d", game.stats.earlyStrafes), 10, 90)
-  love.graphics.setColor(1, 0, 0, 1)
-  love.graphics.print(string.format("  Late: %d", game.stats.lateStrafes), 10, 110)
 
-  if game.gameOver then
+  if not game.gameOver then
+    -- Main stats
+    love.graphics.print(string.format("Score: %d", math.floor(game.score)), 10, 10)
+    love.graphics.print(string.format("Velocity: %d", math.floor(player.velocity)), 10, 30)
+    love.graphics.print(string.format("Distance: %d", math.floor(game.distance)), 10, 50)
+
+    -- Detailed strafe counts
+    love.graphics.print("Strafes:", 10, 70)
+    love.graphics.setColor(0, 1, 0, 1)
+    love.graphics.print(string.format("  Perfect: %d", game.stats.perfectStrafes), 10, 90)
+    love.graphics.setColor(1, 1, 0, 1)
+    love.graphics.print(string.format("  Early: %d", game.stats.earlyStrafes), 10, 110)
+    love.graphics.setColor(1, 0, 0, 1)
+    love.graphics.print(string.format("  Late: %d", game.stats.lateStrafes), 10, 130)
+  else
     local centerX = love.graphics.getWidth() / 2
     local baseY = love.graphics.getHeight() / 2 - 100
 
@@ -199,25 +291,29 @@ function ui.drawHUD(game, player)
       0, baseY + 40, love.graphics.getWidth(), "center")
 
     love.graphics.setColor(0.8, 0.3, 1, 1) -- Purple for combo
-    love.graphics.printf(string.format("Best Combo: %d", game.stats.maxCombo),
+    love.graphics.printf(string.format("Highest Combo: %d", game.stats.maxCombo),
       0, baseY + 60, love.graphics.getWidth(), "center")
 
-    love.graphics.setColor(0, 1, 0, 1) -- Green for perfect
-    love.graphics.printf(string.format("Perfect Strafes: %d", game.stats.perfectStrafes),
+
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.printf("Strafes:",
       0, baseY + 80, love.graphics.getWidth(), "center")
 
-    love.graphics.setColor(1, 1, 0, 1) -- Yellow for early
-    love.graphics.printf(string.format("Early Strafes: %d", game.stats.earlyStrafes),
+    love.graphics.setColor(0, 1, 0, 1) -- Green for perfect
+    love.graphics.printf(string.format("Perfect: %d", game.stats.perfectStrafes),
       0, baseY + 100, love.graphics.getWidth(), "center")
 
-    love.graphics.setColor(1, 0, 0, 1) -- Red for late
-    love.graphics.printf(string.format("Late Strafes: %d", game.stats.lateStrafes),
+    love.graphics.setColor(1, 1, 0, 1) -- Yellow for early
+    love.graphics.printf(string.format("Early: %d", game.stats.earlyStrafes),
       0, baseY + 120, love.graphics.getWidth(), "center")
 
-    -- Restart prompt in white
+    love.graphics.setColor(1, 0, 0, 1) -- Red for late
+    love.graphics.printf(string.format("Late: %d", game.stats.lateStrafes),
+      0, baseY + 140, love.graphics.getWidth(), "center")
+
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.printf("Press R to restart",
-      0, baseY + 160, love.graphics.getWidth(), "center")
+      0, baseY + 180, love.graphics.getWidth(), "center")
   end
 end
 

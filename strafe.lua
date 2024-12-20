@@ -12,7 +12,6 @@ function strafe.createState()
     activeStrafe = nil,
     strafeTimeout = 0.2,
     resultDisplayed = false,
-    -- New spam detection fields
     recentStrokes = {},    -- Stores recent key press timestamps
     maxStrokeHistory = 10, -- How many recent strokes to track
     spamThreshold = 0.3,   -- Time threshold between strokes (80ms)
