@@ -154,7 +154,7 @@ function player.startHitEffect(p)
   p.hitEffect.shake.timer = 0
   
   -- Create explosion particles
-  for i = 1, 15 do
+  for _ = 1, 15 do
     local angle = math.random() * math.pi * 2
     local speed = math.random(100, 200)
     table.insert(p.hitEffect.particles, {

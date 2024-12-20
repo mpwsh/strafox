@@ -181,7 +181,7 @@ function ui.drawDeathAnimation(player)
   end
 end
 
-function ui.addStrafeText(game, player, result, duration)
+function ui.addStrafeText(game, player, result, duration, state)
   local text = {
     result = result,
     duration = duration,
@@ -278,7 +278,6 @@ function ui.drawHUD(game, player)
     love.graphics.setColor(1, 0, 0, 1)
     love.graphics.print(string.format("  Late: %d", game.stats.lateStrafes), 10, 130)
   else
-    local centerX = love.graphics.getWidth() / 2
     local baseY = love.graphics.getHeight() / 2 - 100
 
     -- Game Over title (bigger and white)

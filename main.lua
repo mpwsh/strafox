@@ -10,6 +10,13 @@ local strafe = require 'strafe'
 local Shader = require 'shader'
 local items = require 'items'
 
+-- Global declarations for Love2D game state
+local initializeGameState
+local player
+local state
+local game
+local effect
+
 function initializeGameState()
   return {
     score = 0,
@@ -55,7 +62,6 @@ function love.load()
           .chain(moonshine.effects.filmgrain)
           .chain(moonshine.effects.glow)
           .chain(moonshine.effects.chromasep)
-
   -- Configure the effects
   effect.crt.distortionFactor = {1.03, 1.035}  -- Subtle curve
   effect.crt.feather = 0.02                    -- Smoothing
@@ -68,11 +74,7 @@ function love.load()
   
   effect.chromasep.angle = 0.5                 -- Direction of color separation
   effect.chromasep.radius = 2                  -- Amount of separation
-  colors = {
-    { 1, 0.4, 0 },
-    { 1, 0.6, 0 },
-    { 1, 0.8, 0 }
-  }
+  
   math.randomseed(os.time())
 end
 
@@ -150,11 +152,11 @@ end
   local rightKey = love.keyboard.isDown('d') 
   local currentTime = love.timer.getTime()
 
-  state = strafe.update(state, leftKey, rightKey, currentTime, player.velocity)
+  state = strafe.update(state, leftKey, rightKey, currentTime)
   physics.updatePlayerMovement(player, leftKey, rightKey, dt)
 
   if state.lastStrafeResult and not state.resultDisplayed then
-    ui.addStrafeText(game, player, state.lastStrafeResult, state.lastStrafeDuration)
+    ui.addStrafeText(game, player, state.lastStrafeResult, state.lastStrafeDuration, state)  -- Added state here
     state.resultDisplayed = true
     state.lastStrafeResult = nil
   end

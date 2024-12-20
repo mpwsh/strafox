@@ -17,7 +17,6 @@ end
 
 function items.spawn(obstacles)
     local possiblePositions = {}
-    local screenWidth = love.graphics.getWidth()
     
     -- Find gaps between obstacles
     for i = 1, #obstacles - 1 do
