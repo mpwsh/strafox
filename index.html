@@ -5,6 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, minimum-scale=1, maximum-scale=1">
     <title>Strafox</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         :root {
             --monokai-bg: #2d2a2e;
@@ -101,19 +102,41 @@
         }
 
         .leaderboard {
-            max-width: 600px;
+            max-width: 1200px;
             margin: 0 auto;
             background-color: var(--monokai-lighter);
             border-radius: 8px;
             padding: 1rem;
+            overflow-x: auto;
         }
 
-        .leaderboard-item {
-            display: flex;
-            justify-content: space-between;
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: var(--text-color);
+        }
+
+        .leaderboard-table th,
+        .leaderboard-table td {
             padding: 0.75rem;
+            text-align: left;
             border-bottom: 1px solid var(--monokai-bg);
         }
+
+        .leaderboard-table th {
+            background-color: var(--monokai-bg);
+            color: var(--accent-color);
+            position: sticky;
+            top: 0;
+        }
+
+        .leaderboard-table tbody tr:hover {
+            background-color: var(--monokai-bg);
+        }
+
+        .perfect { color: #a9dc76; }
+        .early { color: #ffd866; }
+        .late { color: #ff6188; }
     </style>
   </head>
   <body>
@@ -127,46 +150,54 @@
             <canvas id="loadingCanvas" oncontextmenu="event.preventDefault()" width="800" height="600"></canvas>
             <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
         </div>
-
-            <button class="fullscreen-btn" onclick="goFullScreen();">Go Fullscreen</button>
+        <button class="fullscreen-btn" onclick="goFullScreen();">Go Fullscreen</button>
     </div>
 
     <div id="leaderboard" class="tab-content">
         <div class="leaderboard">
-            <div class="leaderboard-item">
-                <span>1. Player One</span>
-                <span>10,000</span>
-            </div>
-            <div class="leaderboard-item">
-                <span>2. Player Two</span>
-                <span>8,500</span>
-            </div>
-            <div class="leaderboard-item">
-                <span>3. Player Three</span>
-                <span>7,200</span>
-            </div>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Username</th>
+                        <th>Score</th>
+                        <th>Distance</th>
+                        <th>Perfect</th>
+                        <th>Early</th>
+                        <th>Late</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <tr>
+                        <td colspan="8">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
     <footer>
         <p>Built with <a href="https://github.com/Davidobot/love.js">love.js</a><br>Hint: Reload the page if screen is blank</p>
     </footer>
-
+    <script src="consolewrapper.js"></script>
     <script type='text/javascript'>
       function goFullScreen(){
-            var canvas = document.getElementById("canvas");
-            if(canvas.requestFullScreen)
-                canvas.requestFullScreen();
-            else if(canvas.webkitRequestFullScreen)
-                canvas.webkitRequestFullScreen();
-            else if(canvas.mozRequestFullScreen)
-                canvas.mozRequestFullScreen();
+        var canvas = document.getElementById("canvas");
+        if(canvas.requestFullScreen)
+            canvas.requestFullScreen();
+        else if(canvas.webkitRequestFullScreen)
+            canvas.webkitRequestFullScreen();
+        else if(canvas.mozRequestFullScreen)
+            canvas.mozRequestFullScreen();
       }
+
       function FullScreenHook(){
         var canvas = document.getElementById("canvas");
         canvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
         canvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
       }
+
       var loadingContext = document.getElementById('loadingCanvas').getContext('2d');
       function drawLoadingText(text) {
         var canvas = loadingContext.canvas;
@@ -200,10 +231,10 @@
         canvas: (function() {
           var canvas = document.getElementById('canvas');
 
-          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
-          // application robust, you may want to override this behavior before shipping!
-          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
-          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+          canvas.addEventListener("webglcontextlost", function(e) { 
+            alert('WebGL context lost. You will need to reload the page.'); 
+            e.preventDefault(); 
+          }, false);
 
           return canvas;
         })(),
@@ -223,9 +254,9 @@
           Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
         }
       };
+
       Module.setStatus('Downloading...');
       window.onerror = function(event) {
-        // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
         Module.setStatus('Exception thrown, see JavaScript console');
         Module.setStatus = function(text) {
           if (text) Module.printErr('[post-exception status] ' + text);
@@ -235,20 +266,71 @@
       var applicationLoad = function(e) {
         Love(Module);
       }
+
+      function formatDate(timestamp) {
+        return new Date(timestamp * 1000).toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+      }
+
+    async function updateLeaderboard() {
+        const tbody = document.getElementById('leaderboardBody');
+  tbody.innerHTML = '<tr><td colspan="8">Loading...</td></tr>';
+  
+  try {
+ const response = await fetch('https://kv.mpw.sh/api/scores');
+ const data = await response.json();
+ 
+ const validScores = data
+.filter(entry => {
+  const sha256 = text => CryptoJS.SHA256(text).toString(CryptoJS.enc.Hex);
+  const expectedHash = sha256(
+    entry.value.timestamp + ":" + entry.value.distance + ":" + entry.value.score
+  );
+  return entry.value.hash === expectedHash;
+})
+tbody.innerHTML = validScores.map((score, indgx) => `
+    <tr>
+        <td>${index + 1}</td>
+        <td>${score.value.username}</td>
+        <td>${score.value.score.toLocaleString()}</td>
+        <td>${score.value.distance.toLocaleString()}</td>
+        <td class="perfect">${score.value.strafes.perfect}</td>
+        <td class="early">${score.value.strafes.early}</td>
+        <td class="late">${score.value.strafes.late}</td>
+        <td>${formatDate(score.value.timestamp)}</td>
+    </tr>
+`).join('');
+  } catch (error) {
+    tbody.innerHTML = '<tr><td colspan="8">Error loading leaderboard</td></tr>';
+  }
+}
+      // Tab handling with leaderboard update
+      document.querySelectorAll('.tab-button').forEach(button => {
+          button.addEventListener('click', () => {
+              document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+              document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+              
+              button.classList.add('active');
+              const tabId = button.dataset.tab;
+              document.getElementById(tabId).classList.add('active');
+              
+              if (tabId === 'leaderboard') {
+                  updateLeaderboard();
+              }
+          });
+      });
+
+      // Initial load if starting on leaderboard tab
+      if (document.querySelector('.tab-button[data-tab="leaderboard"]').classList.contains('active')) {
+          updateLeaderboard();
+      }
     </script>
     <script type="text/javascript" src="game.js"></script>
     <script async type="text/javascript" src="love.js" onload="applicationLoad(this)"></script>
-    <script>
-        // Tab functionality
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                
-                button.classList.add('active');
-                document.getElementById(button.dataset.tab).classList.add('active');
-            });
-        });
-    </script>
   </body>
 </html>
