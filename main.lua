@@ -313,9 +313,11 @@ function submitScore()
               headers: { 'Content-Type': 'application/json' },
               body: scoreData
             });
+            FS.mkdir('/home/web_user/love/strafox', { recursive: true });
             FS.writeFile('/home/web_user/love/strafox/__tempscore-submit', String(response.status));
           } catch (err) {
             console.error("Error submitting score:", err);
+            FS.mkdir('/home/web_user/love/strafox', { recursive: true });
             FS.writeFile('/home/web_user/love/strafox/__tempscore-submit', "ERROR");
           }
         }
