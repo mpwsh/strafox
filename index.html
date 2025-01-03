@@ -288,12 +288,13 @@
  const validScores = data
 .filter(entry => {
   const sha256 = text => CryptoJS.SHA256(text).toString(CryptoJS.enc.Hex);
+      console.log(entry.value.score);
   const expectedHash = sha256(
-    entry.value.timestamp + ":" + entry.value.distance + ":" + entry.value.score
+    entry.value.timestamp + ":" + entry.value.score
   );
   return entry.value.hash === expectedHash;
 })
-tbody.innerHTML = validScores.map((score, indgx) => `
+tbody.innerHTML = validScores.map((score, index) => `
     <tr>
         <td>${index + 1}</td>
         <td>${score.value.username}</td>

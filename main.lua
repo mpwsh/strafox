@@ -296,10 +296,7 @@ function submitScore()
   }
 
   local hash = love.data.encode('string', 'hex', love.data.hash('sha256', 
-    payload.timestamp .. 
-    ":" ..
-    payload.distance ..
-    ":" ..
+    payload.timestamp ..  ":" ..
     payload.score
   ))
 
