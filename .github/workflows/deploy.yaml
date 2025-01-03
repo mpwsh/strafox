@@ -34,6 +34,7 @@ jobs:
           npx love.js --title Strafox -c ${GAME_DIR} web
           cp index.html ./web/
           cp scripts/globalizeFS.js ./web/
+          cp scripts/consolewrapper.js ./web/
           cd web && node globalizeFS.js
           cd ../
 
