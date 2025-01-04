@@ -10,14 +10,9 @@ local physics = require 'physics'
 local strafe = require 'strafe'
 local Shader = require 'shader'
 local items = require 'items'
-local json = require("json")
-local scoresEndpoint = "https://kv.mpw.sh/api/scores/"
+local kv = require 'kv'
+local json = require 'json'
 
-local https
-if love.system.getOS() ~= "Web" then -- Changed from 'not love.system.getOS() == "Web"'
-  package.cpath = package.cpath .. ";./libs/?.so"
-  https = require 'https'
-end
 
 -- Global declarations for Love2D game state
 local initializeGameState
@@ -46,6 +41,7 @@ function initializeGameState()
     perfectScore = 200,
     badScoreMultiplier = 0.5,
     isPaused = false,
+    timestamp = os.time(),
     introText = {
       message = "Ready?\nPress P to pause. R to restart.\nA and D to move",
       opacity = 1,
@@ -72,6 +68,25 @@ function initializeGameState()
 end
 
 function love.load()
+  if love.system.getOS() == "Web" then
+    if love.filesystem.createDirectory("") then
+      print("Created game data directory")
+    end
+    print("Save directory:", love.filesystem.getSaveDirectory())
+    local success, message =love.filesystem.write( "__tempscore-submit", "")
+    if success then 
+      print ('Score data file created')
+    else 
+      print ('Score file not created: '..message)
+    end
+    local writable = love.filesystem.getInfo(love.filesystem.getSaveDirectory())
+
+    print("Write location: ", writable)
+    if writable == nil then
+    print("Restarting due to unable to write")
+    love.load()
+    end
+  end
   player = playerModule.create()
   state = strafe.createState()
   game = initializeGameState()
@@ -97,6 +112,14 @@ end
 function love.update(dt)
   if (JS.retrieveData(dt)) then
     return
+  end
+  if kv.retryDelay then 
+    kv.retryTimer = kv.retryTimer + dt
+    if kv.retryTimer >= kv.retryDelay then
+        kv.submitScore(game) 
+        kv.retryDelay = nil 
+        kv.retryTimer = 0
+    end
   end
   playerModule.updateHitEffect(player, dt)
 
@@ -239,24 +262,24 @@ end
 
 function love.keypressed(key)
   if not game.isEnteringName then
-  if key == 'p' then
-    game.isPaused = not game.isPaused
-    state.leftPressed = false
-    state.rightPressed = false
-  elseif key == 'r' then
-    game = initializeGameState()
-    player = playerModule.create()
-    state = strafe.createState()
-  elseif key == 's' and game.gameOver and game.canSubmit then
-    game.showingSubmitScore = true
-    game.isEnteringName = true
-  end
+    if key == 'p' then
+      game.isPaused = not game.isPaused
+      state.leftPressed = false
+      state.rightPressed = false
+    elseif key == 'r' then
+      game = initializeGameState()
+      player = playerModule.create()
+      state = strafe.createState()
+    elseif key == 's' and game.gameOver and game.canSubmit then
+      game.showingSubmitScore = true
+      game.isEnteringName = true
+    end
   else
     if key == 'return' or key == 'kpenter' then
       if #game.playerName > 0 then
         game.isEnteringName = false
         game.isSubmitting = true
-        submitScore()
+        kv.submitScore(game)
       end
     elseif key == 'backspace' then
       game.playerName = string.sub(game.playerName, 1, -2)
@@ -270,93 +293,4 @@ function love.textinput(text)
   end
 end
 
-local function handleResponse(code, data, errorBody)
-  game.isSubmitting = false
-  if code == 201 then
-    game.submitSuccess = true
-    game.canSubmit = false
-  else
-    game.submitError = true
-    if errorBody then print("Error submitting score:", errorBody) end
-  end
-end
 
-
-function submitScore()
-  local payload = {
-    username = game.playerName,
-    score = math.floor(game.score),
-    strafes = {
-      perfect = game.stats.perfectStrafes,
-      early = game.stats.earlyStrafes,
-      late = game.stats.lateStrafes
-    },
-    distance = math.floor(game.distance),
-    timestamp = os.time()
-  }
-
-  local hash = love.data.encode('string', 'hex', love.data.hash('sha256', 
-    payload.timestamp ..  ":" ..
-    payload.score
-  ))
-
-  payload.hash = hash
-  local jsonString = json.encode(payload)
-
-  if love.system.getOS() == "Web" then
-    JS.newPromiseRequest(
-      JS.stringFunc([[
-        async function submitScore(endpoint, username, timestamp, scoreData) {
-          try {
-            const response = await fetch(`${endpoint}${username}-${timestamp}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: scoreData
-            });
-            FS.mkdir('/home/web_user/love/strafox', { recursive: true });
-            FS.writeFile('/home/web_user/love/strafox/__tempscore-submit', String(response.status));
-          } catch (err) {
-            console.error("Error submitting score:", err);
-            FS.mkdir('/home/web_user/love/strafox', { recursive: true });
-            FS.writeFile('/home/web_user/love/strafox/__tempscore-submit', "ERROR");
-          }
-        }
-        submitScore('%s', '%s', '%s', '%s');
-      ]],
-        scoresEndpoint,
-        payload.username,
-        payload.timestamp,
-        jsonString:gsub("'", "\\'")
-      ),
-      handleResponse,
-      function(err)
-        print("Debug: Got error:", err)
-        handleResponse(0, payload, err)
-      end,
-      5,
-      "score-submit"
-    )
-  else
-    if not https then
-      handleResponse(0, payload, "HTTPS module not available")
-      return
-    end
-
-    print("Attempting request to:", scoresEndpoint .. payload.username .. "-" .. payload.timestamp)
-    local code, body = https.request(
-      scoresEndpoint .. payload.username .. "-" .. payload.timestamp,
-      {
-        method = "POST",
-        headers = {
-          ["Content-Type"] = "application/json",
-          ["Content-Length"] = #jsonString
-        },
-        data = jsonString
-      }
-    )
-    handleResponse(code, payload, body)
-
-    print("Response:", code, body)
-    print("req:", jsonString)
-  end
-end
