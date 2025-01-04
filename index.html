@@ -294,6 +294,7 @@
   );
   return entry.value.hash === expectedHash;
 })
+.sort((a, b) => b.value.score - a.value.score);
 tbody.innerHTML = validScores.map((score, index) => `
     <tr>
         <td>${index + 1}</td>
