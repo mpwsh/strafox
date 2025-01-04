@@ -8,10 +8,11 @@ local ui = require 'ui'
 local playerModule = require 'player'
 local physics = require 'physics'
 local strafe = require 'strafe'
-local Shader = require 'shader'
+local shader = require 'shader'
 local items = require 'items'
 local kv = require 'kv'
 local json = require 'json'
+local sound = require 'sound'
 
 
 -- Global declarations for Love2D game state
@@ -68,6 +69,8 @@ function initializeGameState()
 end
 
 function love.load()
+
+  sound.load()
   if love.system.getOS() == "Web" then
     if love.filesystem.createDirectory("") then
       print("Created game data directory")
@@ -90,7 +93,7 @@ function love.load()
   player = playerModule.create()
   state = strafe.createState()
   game = initializeGameState()
-  Shader.load()
+  shader.load()
   -- Create moonshine effect chain
   effect = moonshine(moonshine.effects.crt)
       .chain(moonshine.effects.filmgrain)
@@ -110,6 +113,7 @@ function love.load()
 end
 
 function love.update(dt)
+  sound.update(dt)
   if (JS.retrieveData(dt)) then
     return
   end
@@ -255,7 +259,7 @@ end
 
 function love.draw()
   effect(function()
-    Shader.drawBackground(game)
+    shader.drawBackground(game)
     ui.draw(game, player)
   end)
 end

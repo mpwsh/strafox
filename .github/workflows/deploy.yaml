@@ -36,6 +36,7 @@ jobs:
           cp scripts/globalizeFS.js ./web/
           cp scripts/consolewrapper.js ./web/
           cp scripts/webdb.js ./web/
+          cp -r assets web/assets
           cd web && node globalizeFS.js
           cd ../
 

@@ -2,6 +2,7 @@ local ui = {}
 
 local obstacles = require("obstacles")
 local items = require("items")
+local sound = require 'sound'
 
 function ui.updateStrafeText(game, dt)
   for i = #game.strafeText, 1, -1 do
@@ -202,6 +203,9 @@ function ui.addStrafeText(game, player, result, duration, state)
     game.stats.perfectStrafes = game.stats.perfectStrafes + 1
     game.stats.maxCombo = math.max(game.stats.maxCombo, game.perfectCombo)
 
+    -- Play the perfect sound with current combo
+    sound.playPerfectSound(game.perfectCombo)
+
     -- Calculate score with combo multiplier
     text.score = game.perfectScore * game.perfectCombo
     text.combo = game.perfectCombo
@@ -212,8 +216,10 @@ function ui.addStrafeText(game, player, result, duration, state)
     -- Track stats for non-perfect strafes
     if result == "Late" then
       game.stats.lateStrafes = game.stats.lateStrafes + 1
+      sound.playMistakeSound("Late", state.lastStrafeDuration)
     elseif result == "Early" then
       game.stats.earlyStrafes = game.stats.earlyStrafes + 1
+      sound.playMistakeSound("Early", state.lastStrafeDuration)
     end
 
     -- Reset combo on mistake
