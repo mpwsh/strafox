@@ -110,6 +110,7 @@ function ui.drawPlayer(player)
 end
 
 function ui.draw(game, player)
+  ui.drawMenu(game)
   -- Apply screen shake
   if player.hitEffect.active and player.hitEffect.shake.timer < player.hitEffect.shake.duration then
     local intensity = player.hitEffect.shake.intensity *
@@ -158,10 +159,12 @@ function ui.draw(game, player)
 
   -- Draw pause text if game is paused
   if game.isPaused then
+    if not game.showMenu then
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.printf("PAUSED",
       0, love.graphics.getHeight() / 2 - 30,
       love.graphics.getWidth(), "center")
+    end
   end
 end
 
@@ -354,4 +357,51 @@ function ui.drawHUD(game, player)
   end
 end
 
+function ui.drawMenu(game)
+  if not game.showMenu then return end
+
+  local screenWidth = love.graphics.getWidth()
+  local screenHeight = love.graphics.getHeight()
+  
+  -- Draw semi-transparent background
+  love.graphics.setColor(0, 0, 0, 0.8)
+  love.graphics.rectangle('fill', 0, 0, screenWidth, screenHeight)
+  
+  -- Draw menu title
+  love.graphics.setColor(1, 1, 1, 1)
+  love.graphics.printf("Sound Settings", 0, screenHeight * 0.3, screenWidth, "center")
+  
+  -- Draw options
+  for i, option in ipairs(game.menuOptions) do
+    local y = screenHeight * (0.4 + (i-1) * 0.1)
+    local cursor = (i == game.menuSelection and game.showMenuCursor) and ">" or " "
+    
+    -- Draw option name
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.printf(cursor .. " " .. option.name, -50, y, screenWidth, "center")
+    
+    -- Draw slider bar
+    local barWidth = 200
+    local barX = (screenWidth - barWidth) / 2
+    local barY = y + 30
+    
+    -- Background bar
+    love.graphics.setColor(0.3, 0.3, 0.3, 1)
+    love.graphics.rectangle('fill', barX, barY, barWidth, 10)
+    
+    -- Value bar
+    love.graphics.setColor(0.2, 0.6, 1, 1)
+    love.graphics.rectangle('fill', barX, barY, barWidth * option.value, 10)
+    
+    -- Value text
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.printf(string.format("%.1f", option.value), 
+      barX + barWidth + 10, barY - 5, 50, "left")
+  end
+  
+  -- Draw controls help
+  love.graphics.setColor(0.7, 0.7, 0.7, 1)
+  love.graphics.printf("UP/DOWN: Select   LEFT/RIGHT: Adjust   ESC: Close", 
+    0, screenHeight * 0.8, screenWidth, "center")
+end
 return ui

@@ -44,7 +44,7 @@ function initializeGameState()
     isPaused = false,
     timestamp = os.time(),
     introText = {
-      message = "Ready?\nPress P to pause. R to restart.\nA and D to move",
+      message = "Ready?\nPress P to pause. R to restart.\nA and D to move.\nESC for menu",
       opacity = 1,
       lifetime = 3,
       fadeOutDuration = 1
@@ -64,7 +64,17 @@ function initializeGameState()
     showCursor = true,
     isSubmitting = false,
     submitSuccess = false,
-    canSubmit = true
+    canSubmit = true,
+    -- Menu state
+    showMenu = false,
+    menuSelection = 1,  -- 1: Master, 2: Music, 3: SFX
+    menuOptions = {
+      { name = "Master Volume", value = 1.0 },
+      { name = "Music Volume", value = 1.0 },
+      { name = "SFX Volume", value = 0.1 }
+    },
+    menuBlinkTimer = 0,
+    showMenuCursor = true,
   }
 end
 
@@ -113,6 +123,13 @@ function love.load()
 end
 
 function love.update(dt)
+if game.showMenu then
+  game.menuBlinkTimer = game.menuBlinkTimer + dt
+  if game.menuBlinkTimer >= 0.5 then
+    game.showMenuCursor = not game.showMenuCursor
+    game.menuBlinkTimer = 0
+  end
+end
   sound.update(dt)
   if (JS.retrieveData(dt)) then
     return
@@ -265,6 +282,43 @@ function love.draw()
 end
 
 function love.keypressed(key)
+  if game.showMenu then
+    if key == 'escape' then
+      game.showMenu = false
+      game.isPaused = false
+    elseif key == 'up' then
+      game.menuSelection = ((game.menuSelection - 2) % 3) + 1
+    elseif key == 'down' then
+      game.menuSelection = (game.menuSelection % 3) + 1
+    elseif key == 'left' then
+      local option = game.menuOptions[game.menuSelection]
+      option.value = math.max(0, option.value - 0.1)
+      updateSoundVolumes(game)
+    elseif key == 'right' then
+      local option = game.menuOptions[game.menuSelection]
+      option.value = math.min(1, option.value + 0.1)
+      updateSoundVolumes(game)
+    end
+    return  -- Don't process other keys while in menu
+  end
+
+  if not game.isEnteringName then
+    if key == 'escape' then
+      game.showMenu = true
+      game.isPaused = true
+    elseif key == 'p' and not game.showMenu then
+      game.isPaused = not game.isPaused
+      state.leftPressed = false
+      state.rightPressed = false
+    elseif key == 'r' then
+      game = initializeGameState()
+      player = playerModule.create()
+      state = strafe.createState()
+    elseif key == 's' and game.gameOver and game.canSubmit then
+      game.showingSubmitScore = true
+      game.isEnteringName = true
+    end
+  else
   if not game.isEnteringName then
     if key == 'p' then
       game.isPaused = not game.isPaused
@@ -290,6 +344,7 @@ function love.keypressed(key)
     end
   end
 end
+end
 
 function love.textinput(text)
   if game.isEnteringName and #game.playerName < 12 then
@@ -297,4 +352,8 @@ function love.textinput(text)
   end
 end
 
-
+function updateSoundVolumes(game)
+  sound.setMasterVolume(game.menuOptions[1].value)
+  sound.setMusicVolume(game.menuOptions[2].value)
+  sound.setSFXVolume(game.menuOptions[3].value)
+end

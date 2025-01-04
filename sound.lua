@@ -19,8 +19,8 @@ local PITCH_RATIOS = {
 
 -- Settings that we can adjust globally
 local settings = {
-    volume_music = 1.0,
-    volume_sfx = 0.1,
+    volume_music = 0.7,
+    volume_sfx = 0.2,
     master_volume = 1.0
 }
 
