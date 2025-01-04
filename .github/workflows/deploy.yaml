@@ -35,6 +35,7 @@ jobs:
           cp index.html ./web/
           cp scripts/globalizeFS.js ./web/
           cp scripts/consolewrapper.js ./web/
+          cp scripts/webdb.js ./web/
           cd web && node globalizeFS.js
           cd ../
 
