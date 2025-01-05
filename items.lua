@@ -16,28 +16,20 @@ function items.create(x, y)
 end
 
 function items.spawn(obstacles)
-    local possiblePositions = {}
+    local gapMarkers = {}
     
-    -- Find gaps between obstacles
-    for i = 1, #obstacles - 1 do
-        if not obstacles[i].isGapMarker and not obstacles[i + 1].isGapMarker then
-            local gap = {
-                x = (obstacles[i].x + obstacles[i + 1].x) / 2,
-                width = obstacles[i + 1].x - obstacles[i].x
-            }
-            if gap.width > 50 then  -- Ensure gap is wide enough
-                table.insert(possiblePositions, gap)
-            end
+    for _, obs in ipairs(obstacles) do
+        if obs.isGapMarker then
+            table.insert(gapMarkers, obs.x)
         end
     end
     
-    if #possiblePositions > 0 then
-        local chosen = possiblePositions[math.random(#possiblePositions)]
-        return items.create(chosen.x, obstacles[1].y)
+    if #gapMarkers >= 2 then
+        local x = (gapMarkers[1] + gapMarkers[2]) / 2
+        return items.create(x, -320)
     end
     return nil
 end
-
 function items.startPickupEffect(item)
     item.pickupEffect.active = true
     item.pickupEffect.timer = 0

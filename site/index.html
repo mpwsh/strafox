@@ -96,13 +96,14 @@
         </button>
 
         <!-- Game content -->
-        <div id="play" class="tab-content active p-4">
-          <div class="game-container relative w-full max-w-4xl mx-auto aspect-[4/3]">
-            <canvas id="loadingCanvas" class="absolute top-0 left-0 w-full h-full" oncontextmenu="event.preventDefault()" width="800" height="600"></canvas>
-            <canvas id="canvas" class="absolute top-0 left-0 w-full h-full" oncontextmenu="event.preventDefault()"></canvas>
-          </div>
-        </div>
-
+<div id="play" class="tab-content active p-4">
+  <div class="game-container relative w-full max-w-4xl mx-auto" 
+       id="game-container" 
+       x-init="updateContainerSize()">
+    <canvas id="loadingCanvas" class="absolute top-0 left-0 w-full h-full" oncontextmenu="event.preventDefault()" width="800" height="600"></canvas>
+    <canvas id="canvas" class="absolute top-0 left-0 w-full h-full" oncontextmenu="event.preventDefault()"></canvas>
+  </div>
+</div>
         <!-- Leaderboard content -->
         <div id="leaderboard" class="tab-content hidden p-4">
           <div class="max-w-6xl mx-auto bg-neutral-100 dark:bg-neutral-800 rounded-lg p-4 overflow-x-auto">
