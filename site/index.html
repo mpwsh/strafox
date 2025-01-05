@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en-us" class="h-full">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, minimum-scale=1, maximum-scale=1">
+    <title>Strafox</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              game: {
+                perfect: '#a9dc76',
+                early: '#ffd866',
+                late: '#ff6188'
+              }
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body class="dark:bg-neutral-950 bg-white text-neutral-900 dark:text-white" x-data="{ showSidebar: false, darkMode: true }" x-init="
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark')
+      darkMode = true
+    } else {
+      document.documentElement.classList.remove('dark')
+      darkMode = false
+    }">
+    
+    <div class="relative flex w-full flex-col md:flex-row">
+      <!-- Dark overlay for sidebar -->
+      <div x-cloak x-show="showSidebar" class="fixed inset-0 z-10 bg-black/50 backdrop-blur-sm md:hidden" 
+           @click="showSidebar = false" x-transition.opacity></div>
+
+      <!-- Sidebar -->
+      <nav x-cloak class="fixed left-0 z-20 flex h-screen w-64 shrink-0 flex-col border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 transition-transform duration-300 md:translate-x-0"
+           :class="showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'">
+        
+        <!-- Logo -->
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-2xl font-bold">Strafox</h1>
+          <button @click="darkMode = !darkMode; localStorage.theme = darkMode ? 'dark' : 'light'; darkMode ? document.documentElement.classList.add('dark') : document.documentElement.classList.remove('dark')" 
+                  class="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg">
+            <svg x-show="!darkMode" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+            <svg x-show="darkMode" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="space-y-2">
+          <button class="tab-button w-full text-left px-4 py-2 rounded-lg transition-colors"
+                  :class="{ 'bg-neutral-100 dark:bg-neutral-800': true }"
+                  data-tab="play">
+            Play Game
+          </button>
+          <button class="tab-button w-full text-left px-4 py-2 rounded-lg transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  data-tab="leaderboard">
+            Leaderboard
+          </button>
+        </div>
+
+        <!-- Fullscreen button -->
+        <button onclick="goFullScreen();" 
+                class="mt-4 w-full px-4 py-2 border-2 border-neutral-900 dark:border-white rounded-lg hover:bg-neutral-900 hover:text-white dark:hover:bg-white dark:hover:text-neutral-900 transition-colors">
+          Go Fullscreen
+        </button>
+
+        <div class="mt-auto text-sm text-neutral-600 dark:text-neutral-400">
+          <p>Built with <a href="https://github.com/Davidobot/love.js" class="underline">love.js</a></p>
+          <p class="mt-1">Hint: Reload if screen is blank</p>
+        </div>
+      </nav>
+
+      <!-- Main content -->
+      <main class="flex-1 md:ml-64">
+        <!-- Mobile toggle -->
+        <button class="fixed right-4 top-4 z-30 rounded-lg bg-neutral-900 p-3 text-white dark:bg-white dark:text-neutral-900 md:hidden" 
+                @click="showSidebar = !showSidebar">
+          <svg x-show="!showSidebar" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <svg x-show="showSidebar" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <!-- Game content -->
+        <div id="play" class="tab-content active p-4">
+          <div class="game-container relative w-full max-w-4xl mx-auto aspect-[4/3]">
+            <canvas id="loadingCanvas" class="absolute top-0 left-0 w-full h-full" oncontextmenu="event.preventDefault()" width="800" height="600"></canvas>
+            <canvas id="canvas" class="absolute top-0 left-0 w-full h-full" oncontextmenu="event.preventDefault()"></canvas>
+          </div>
+        </div>
+
+        <!-- Leaderboard content -->
+        <div id="leaderboard" class="tab-content hidden p-4">
+          <div class="max-w-6xl mx-auto bg-neutral-100 dark:bg-neutral-800 rounded-lg p-4 overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr>
+                  <th class="p-3 text-left bg-neutral-200 dark:bg-neutral-700 sticky top-0">Rank</th>
+                  <th class="p-3 text-left bg-neutral-200 dark:bg-neutral-700 sticky top-0">Username</th>
+                  <th class="p-3 text-left bg-neutral-200 dark:bg-neutral-700 sticky top-0">Score</th>
+                  <th class="p-3 text-left bg-neutral-200 dark:bg-neutral-700 sticky top-0">Distance</th>
+                  <th class="p-3 text-left bg-neutral-200 dark:bg-neutral-700 sticky top-0">Perfect</th>
+                  <th class="p-3 text-left bg-neutral-200 dark:bg-neutral-700 sticky top-0">Early</th>
+                  <th class="p-3 text-left bg-neutral-200 dark:bg-neutral-700 sticky top-0">Late</th>
+                  <th class="p-3 text-left bg-neutral-200 dark:bg-neutral-700 sticky top-0">Date</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboardBody">
+                <tr>
+                  <td colspan="8" class="text-center p-4">Loading...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="consolewrapper.js"></script>
+    <script src="webdb.js"></script>
+    <script src="utils.js"></script>
+    <script src="leaderboard.js"></script>
+    <script type="text/javascript" src="game.js"></script>
+    <script async type="text/javascript" src="love.js" onload="applicationLoad(this)"></script>
+  </body>
+</html>

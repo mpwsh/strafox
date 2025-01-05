@@ -32,7 +32,8 @@ jobs:
           GAME_DIR=${GITHUB_WORKSPACE}
           mkdir web
           npx love.js --title Strafox -c ${GAME_DIR} web
-          cp index.html ./web/
+          cp site/index.html ./web/
+          cp site/js/* ./web/
           cp scripts/globalizeFS.js ./web/
           cp scripts/consolewrapper.js ./web/
           cp scripts/webdb.js ./web/
