@@ -74,7 +74,7 @@ function kv.submitScore(game)
           try {
             const response = await fetch(endpoint + username + "-" + timestamp, {
               method: 'POST',
-              headers: {'Content-Type': 'application/json'},
+              headers: {'Content-Type': 'application/json', "X-SECRET-KEY": "strafox.mpw.sh"},
               body: scoreData
             });
             FS.writeFile('/home/web_user/love/strafox/__tempscore-submit', response.status.toString());
@@ -111,6 +111,7 @@ function kv.submitScore(game)
         method = "POST",
         headers = {
           ["Content-Type"] = "application/json",
+          ["X-SECRET-KEY"] = "strafox.mpw.sh",
           ["Content-Length"] = #jsonString
         },
         data = jsonString

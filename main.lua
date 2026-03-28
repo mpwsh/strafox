@@ -69,8 +69,8 @@ function initializeGameState()
     showMenu = false,
     menuSelection = 1,  -- 1: Master, 2: Music, 3: SFX
     menuOptions = {
-      { name = "Master Volume", value = 1.0 },
-      { name = "Music Volume", value = 1.0 },
+      { name = "Master Volume", value = 0.1 },
+      { name = "Music Volume", value = 0.1 },
       { name = "SFX Volume", value = 0.1 }
     },
     menuBlinkTimer = 0,
