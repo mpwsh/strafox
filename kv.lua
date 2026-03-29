@@ -73,7 +73,7 @@ function kv.submitScore(game)
         async function submitScore(endpoint, username, timestamp, scoreData) {
           try {
             const response = await fetch(endpoint + username + "-" + timestamp, {
-              method: 'POST',
+              method: 'PUT',
               headers: {'Content-Type': 'application/json', "X-SECRET-KEY": "strafox.mpw.sh"},
               body: scoreData
             });
@@ -108,7 +108,7 @@ function kv.submitScore(game)
     local code, body = https.request(
       scoresEndpoint .. payload.username .. "-" .. payload.timestamp,
       {
-        method = "POST",
+        method = "PUT",
         headers = {
           ["Content-Type"] = "application/json",
           ["X-SECRET-KEY"] = "strafox.mpw.sh",
