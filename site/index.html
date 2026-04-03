@@ -86,7 +86,6 @@
         background: rgba(120, 220, 232, 0.05);
       }
 
-      /* Main content fills remaining space */
       .content {
         flex: 1;
         display: flex;
@@ -101,7 +100,6 @@
       /* Game tab */
       .game-tab {
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
         width: 100%;
@@ -114,9 +112,6 @@
 
       .game-container {
         position: relative;
-        width: 100%;
-        max-width: 1120px;
-        aspect-ratio: 4 / 3;
         border: 1px solid var(--border);
         border-radius: 6px;
         overflow: hidden;
@@ -129,6 +124,21 @@
         left: 0;
         width: 100%;
         height: 100%;
+      }
+
+      /* Fake fullscreen */
+      body.fake-fullscreen .header,
+      body.fake-fullscreen .bottom-bar {
+        display: none;
+      }
+
+      body.fake-fullscreen .content {
+        padding: 0;
+      }
+
+      body.fake-fullscreen .game-container {
+        border: none;
+        border-radius: 0;
       }
 
       /* Leaderboard tab */
@@ -191,7 +201,78 @@
         color: var(--text-dim);
       }
 
-      /* Bottom bar: buttons + footer together */
+      /* How to Play tab */
+      .help-tab {
+        width: 100%;
+        max-width: 700px;
+        padding: 2rem 0;
+        overflow-y: auto;
+        height: 100%;
+        line-height: 1.7;
+        font-size: 0.8rem;
+      }
+
+      .help-tab.hidden {
+        display: none;
+      }
+
+      .help-tab h2 {
+        color: var(--accent);
+        font-size: 0.9rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+      }
+
+      .help-tab h3 {
+        color: var(--text);
+        font-size: 0.8rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .help-tab p {
+        color: var(--text-dim);
+        margin-bottom: 0.75rem;
+      }
+
+      .help-tab .label-perfect {
+        color: var(--perfect);
+      }
+      .help-tab .label-slow {
+        color: var(--slow);
+      }
+      .help-tab .label-overlap {
+        color: var(--overlap);
+      }
+
+      .help-tab .key {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 0.7rem;
+      }
+
+      .help-tab .timing-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0.75rem 0;
+        font-size: 0.75rem;
+      }
+
+      .help-tab .timing-table td {
+        padding: 0.4rem 0.75rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .help-tab .timing-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      /* Bottom bar */
       .bottom-bar {
         width: 100%;
         flex-shrink: 0;
@@ -225,17 +306,6 @@
 
       .footer a:hover {
         color: var(--accent);
-      }
-
-      /* Fullscreen: let canvas fill the screen */
-      .game-container:fullscreen,
-      .game-container:-webkit-full-screen,
-      .game-container:-moz-full-screen {
-        width: 100vw;
-        height: 100vh;
-        max-width: none;
-        border: none;
-        border-radius: 0;
       }
 
       @media (max-height: 700px) {
@@ -299,11 +369,95 @@
           </tbody>
         </table>
       </div>
+
+      <div class="help-tab hidden" id="helpTab">
+        <h2>How to Play</h2>
+        <p>
+          Strafox is a counterstrafe training game. Dodge incoming obstacle
+          walls by strafing through the gaps. The game evaluates your
+          counterstrafe timing on every direction change.
+        </p>
+
+        <h3>What is counterstrafing?</h3>
+        <p>
+          In games like CS2, you slide when you release a movement key. To stop
+          instantly, you tap the opposite key — this is a counterstrafe. The
+          faster you tap, the quicker you stop, and the sooner you can shoot
+          accurately.
+        </p>
+        <p>
+          Strafox uses the same physics model as the Source engine to simulate
+          this. Movement is driven by the actual <code>Friction</code> +
+          <code>Accelerate</code>
+          functions from the engine.
+        </p>
+
+        <h3>Timing</h3>
+        <p>
+          Your counterstrafe is rated based on the gap between releasing one key
+          and pressing the opposite:
+        </p>
+        <table class="timing-table">
+          <tr>
+            <td class="label-perfect">Perfect</td>
+            <td>0 – 60ms</td>
+            <td>Up to 2x score bonus for faster timing</td>
+          </tr>
+          <tr>
+            <td class="label-slow">Slow</td>
+            <td>61 – 150ms</td>
+            <td>Score penalty</td>
+          </tr>
+          <tr>
+            <td class="label-overlap">Overlap</td>
+            <td>Both keys held</td>
+            <td>Score penalty</td>
+          </tr>
+        </table>
+        <p>
+          Perfect strafes build combos. Each consecutive Perfect multiplies your
+          score. Any Slow or Overlap breaks the combo. Strafes only count when
+          you're moving fast enough — no gaming the system by wiggling at low
+          speed.
+        </p>
+
+        <h3>Controls</h3>
+        <table class="timing-table">
+          <tr>
+            <td><span class="key">A</span> / <span class="key">D</span></td>
+            <td>Move left / right</td>
+          </tr>
+          <tr>
+            <td><span class="key">P</span></td>
+            <td>Pause</td>
+          </tr>
+          <tr>
+            <td><span class="key">R</span></td>
+            <td>Restart</td>
+          </tr>
+          <tr>
+            <td><span class="key">ESC</span></td>
+            <td>Settings menu</td>
+          </tr>
+          <tr>
+            <td><span class="key">S</span></td>
+            <td>Submit score (game over)</td>
+          </tr>
+        </table>
+
+        <h3>Tips</h3>
+        <p>
+          Watch the velocity indicator on your ship — the horizontal line shows
+          your current speed and direction. A perfect counterstrafe brings it to
+          zero almost instantly. Try to time your direction changes so you pass
+          through gaps at zero velocity.
+        </p>
+      </div>
     </div>
 
     <div class="bottom-bar">
       <div class="controls-bar">
-        <button class="btn" id="btnFullscreen" onclick="goFullScreen();">
+        <button class="btn" id="btnFullscreen" onclick="toggleFakeFullscreen()">
           Fullscreen
         </button>
         <button class="btn active" id="btnPlay" onclick="showTab('game')">
@@ -316,10 +470,11 @@
         >
           Leaderboard
         </button>
+        <button class="btn" id="btnHelp" onclick="showTab('help')">
+          How to Play
+        </button>
       </div>
       <div class="footer">
-        <span>A/D move · P pause · R restart · ESC menu</span>
-        <span>·</span>
         <span
           >Made with <a href="https://love2d.org/">LÖVE</a> &
           <a href="https://github.com/Davidobot/love.js">love.js</a></span
@@ -328,37 +483,93 @@
     </div>
 
     <script>
-      function goFullScreen() {
-        var container = document.getElementById("game-container");
-        if (container.requestFullscreen) container.requestFullscreen();
-        else if (container.webkitRequestFullscreen)
-          container.webkitRequestFullscreen();
-        else if (container.mozRequestFullScreen)
-          container.mozRequestFullScreen();
+      var isFakeFullscreen = false;
+
+      function toggleFakeFullscreen() {
+        isFakeFullscreen = !isFakeFullscreen;
+        document.body.classList.toggle("fake-fullscreen", isFakeFullscreen);
+        document
+          .getElementById("btnFullscreen")
+          .classList.toggle("active", isFakeFullscreen);
+        // Wait for DOM reflow so content area has its new size
+        requestAnimationFrame(function () {
+          resizeGame();
+        });
       }
+
+      // ESC exits fake fullscreen (before the game's ESC handler fires)
+      window.addEventListener(
+        "keydown",
+        function (e) {
+          if (e.key === "Escape" && isFakeFullscreen) {
+            toggleFakeFullscreen();
+            e.stopPropagation();
+          }
+        },
+        true,
+      ); // capture phase so it fires before love.js
 
       function showTab(tab) {
-        var gameTab = document.getElementById("gameTab");
-        var leaderboardTab = document.getElementById("leaderboardTab");
-        var btnPlay = document.getElementById("btnPlay");
-        var btnLeaderboard = document.getElementById("btnLeaderboard");
+        var tabs = {
+          game: document.getElementById("gameTab"),
+          leaderboard: document.getElementById("leaderboardTab"),
+          help: document.getElementById("helpTab"),
+        };
+        var btns = {
+          game: document.getElementById("btnPlay"),
+          leaderboard: document.getElementById("btnLeaderboard"),
+          help: document.getElementById("btnHelp"),
+        };
         var btnFullscreen = document.getElementById("btnFullscreen");
 
-        if (tab === "game") {
-          gameTab.classList.remove("hidden");
-          leaderboardTab.classList.add("hidden");
-          btnPlay.classList.add("active");
-          btnLeaderboard.classList.remove("active");
-          btnFullscreen.style.display = "";
-        } else {
-          gameTab.classList.add("hidden");
-          leaderboardTab.classList.remove("hidden");
-          btnPlay.classList.remove("active");
-          btnLeaderboard.classList.add("active");
-          btnFullscreen.style.display = "none";
-          updateLeaderboard();
+        // Exit fake fullscreen when switching tabs
+        if (isFakeFullscreen) {
+          isFakeFullscreen = false;
+          document.body.classList.remove("fake-fullscreen");
+          btnFullscreen.classList.remove("active");
         }
+
+        for (var key in tabs) {
+          tabs[key].classList.add("hidden");
+          btns[key].classList.remove("active");
+        }
+
+        tabs[tab].classList.remove("hidden");
+        btns[tab].classList.add("active");
+        btnFullscreen.style.display = tab === "game" ? "" : "none";
+
+        if (tab === "leaderboard") updateLeaderboard();
+        resizeGame();
       }
+
+      function resizeGame() {
+        var container = document.getElementById("game-container");
+        var content = document.querySelector(".content");
+
+        var availW = content.clientWidth;
+        var availH = content.clientHeight;
+
+        // Calculate max 4:3 that fits
+        var maxW = isFakeFullscreen ? availW : Math.min(availW, 1120);
+        var w = maxW;
+        var h = (w * 3) / 4;
+
+        if (h > availH) {
+          h = availH;
+          w = (h * 4) / 3;
+        }
+
+        w = Math.floor(w);
+        h = Math.floor(h);
+
+        // Only resize the container — canvas pixel dimensions stay fixed
+        // so LÖVE's internal resolution doesn't break. CSS scales the rendering.
+        container.style.width = w + "px";
+        container.style.height = h + "px";
+      }
+
+      window.addEventListener("resize", resizeGame);
+      requestAnimationFrame(resizeGame);
     </script>
     <script src="consolewrapper.js"></script>
     <script src="webdb.js"></script>

@@ -2,9 +2,13 @@
 
 A counterstrafe training game built with LÖVE. Dodge obstacles by strafing left and right — the game evaluates your counterstrafe timing on every direction change.
 
-**Perfect** (0-40ms) · **Slow** (41-100ms) · **Overlap** (both keys held)
+Movement physics are ported from the Source engine (`Friction` + `Accelerate` from `gamemovement.cpp`) to match the feel of CS2.
 
-Perfect strafes build combos and multiply your score. Mistakes break your combo.
+## Scoring
+
+**Perfect** (0-60ms) · **Slow** (61-150ms) · **Overlap** (both keys held)
+
+Perfect strafes build combos and multiply your score. Faster counterstrafes within the Perfect window earn up to 2x bonus. Strafes only count when moving above a minimum velocity threshold.
 
 ## Controls
 
@@ -21,7 +25,7 @@ Perfect strafes build combos and multiply your score. Mistakes break your combo.
 
 ## Run
 
-```bash
+```
 love .
 ```
 
@@ -29,13 +33,13 @@ love .
 
 ### .love file (all platforms)
 
-```bash
+```
 zip -9 -r strafox.love . -x "*.git*" "build/*" "web/*" "scripts/*" "site/*" ".vscode/*"
 ```
 
 ### Linux
 
-```bash
+```
 cat /usr/bin/love strafox.love > build/strafox
 chmod +x build/strafox
 ```
@@ -44,7 +48,7 @@ Requires LÖVE installed. Distribute `build/strafox` alongside the LÖVE shared 
 
 ### macOS
 
-```bash
+```
 cp -r /Applications/love.app build/Strafox.app
 cp strafox.love build/Strafox.app/Contents/Resources/
 ```
@@ -63,20 +67,34 @@ Output goes to `build/`.
 
 ### Web
 
-```bash
+```
 npm install -g love.js
 ./scripts/buildweb.sh
 ```
 
 Serve locally:
 
-```bash
+```
 cd web && python3 -m http.server 8000
 ```
 
 Open `http://localhost:8000`.
 
 The GitHub Actions workflow in `.github/workflows/deploy.yaml` does this automatically on push to `main` and deploys to GitHub Pages.
+
+## HTTPS module (optional)
+
+Score submission on desktop requires the [lua-https](https://github.com/love2d/lua-https) native module. The `libs/` directory contains a prebuilt Linux `.so`. To build for macOS:
+
+```
+git clone https://github.com/love2d/lua-https.git
+cd lua-https
+cmake -Bbuild -S. -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+cp build/src/https.so /path/to/strafox/libs/
+```
+
+The game runs fine without it — score submission is just disabled on desktop.
 
 ## License
 
